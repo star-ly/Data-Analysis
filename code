@@ -6,3 +6,78 @@ for dirname, _, filenames in os.walk('/kaggle/input'):
         print(os.path.join(dirname, filename))
 
           
+          
+%matplotlib inline
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.linear_model import LinearRegression
+
+import statsmodels.api as sm
+from sklearn.metrics import r2_score, mean_absolute_percentage_error
+
+df = pd.read_csv('/kaggle/input/bitcoin-historical-data/bitstampUSD_1-min_data_2012-01-01_to_2021-03-31.csv')
+df.head()
+df.info()
+
+# Defining our scope
+
+features = ["Open", "Low", "Volume_BTC", "Volume_USD"]
+target = "High"
+
+# Renaming for ease
+
+df.rename(columns = {'Volume_(Currency)':'Volume_USD', 'Volume_(BTC)':'Volume_BTC'}, inplace = True)
+
+# Reduce df to scope
+
+df = df[features + [target]]
+
+df.info()
+
+df.isna().sum()
+
+df.dropna(inplace=True)
+df.isna().sum()
+
+df.shape
+
+df.drop_duplicates(inplace=True)                                       # Let's remove duplicates, how many rows now?
+df.shape
+
+df.info()
+
+
+fcols = df.select_dtypes('float').columns
+icols = df.select_dtypes('integer').columns
+
+df[fcols] = df[fcols].apply(pd.to_numeric, downcast='float')
+df[icols] = df[icols].apply(pd.to_numeric, downcast='integer')
+
+df.info()
+
+x_train, x_test, y_train, y_test = train_test_split(df[features], df[target], test_size=0.3)
+
+model = LinearRegression()
+model.fit(x_train, y_train)
+predictions = model.predict(x_test)  # Get predictions
+
+plt.scatter(y_test, predictions, color='blue')
+plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], linestyle='--', color='red', linewidth=2)
+plt.title('Actual vs. Predicted values')
+plt.xlabel('Actual values')
+plt.ylabel('Predicted values')
+plt.show()
+
+y_prediction = model.predict(x_test)
+residuals = y_test - y_prediction
+
+plt.scatter(y_prediction, residuals, color='blue')
+plt.hlines(y=0, xmin=0, xmax=max(y_prediction), color='red')
+plt.title('Residual plot')
+plt.xlabel('Predicted values')
+plt.ylabel('Residuals')
+plt.show()
